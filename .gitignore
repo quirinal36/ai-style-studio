@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
+
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Frontend build
+frontend/dist/
+frontend/.cache/
+
+# Backend storage (runtime files)
+backend/storage/uploads/*
+backend/storage/results/*
+backend/storage/previews/*
+!backend/storage/uploads/.gitkeep
+!backend/storage/results/.gitkeep
+!backend/storage/previews/.gitkeep
+
+# ML Models (large binary files)
+backend/models/*.t7
+backend/models/*.onnx
+backend/models/*.pth
+
+# Docker
+.docker/
+
+# Logs
+*.log
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/

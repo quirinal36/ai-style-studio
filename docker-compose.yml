@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/models:/app/models
+      - ./backend/presets:/app/presets
+      - storage:/app/storage
+    environment:
+      - DEVICE=cpu
+      - MAX_IMAGE_SIZE=400
+      - MODELS_DIR=/app/models
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  storage:
