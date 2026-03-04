@@ -185,12 +185,60 @@ async def gatys_cancel(task_id: str):
 
 
 @router.post("/fast")
-async def fast_transfer():
-    """Fast style transfer - to be implemented in M3."""
-    raise HTTPException(status_code=501, detail="Fast Style Transfer는 다음 마일스톤에서 구현됩니다.")
+async def fast_transfer(
+    image: UploadFile = File(...),
+    model_name: str = Form(...),
+):
+    """Apply Fast Style Transfer to an uploaded image."""
+    image_bytes = await image.read()
+    err = validate_image_file(image.content_type, len(image_bytes))
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+
+    from services.fast_transfer import FastStyleTransfer
+    import cv2
+    import numpy as np
+    import time as _time
+
+    service = FastStyleTransfer(settings.MODELS_DIR)
+
+    # Decode image
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if img is None:
+        raise HTTPException(status_code=400, detail="이미지를 읽을 수 없습니다.")
+
+    # Resize if too large
+    h, w = img.shape[:2]
+    max_dim = settings.MAX_IMAGE_SIZE
+    if max(h, w) > max_dim:
+        scale = max_dim / max(h, w)
+        img = cv2.resize(img, (int(w * scale), int(h * scale)))
+
+    try:
+        start = _time.time()
+        result = service.transform_image(img, model_name)
+        elapsed_ms = (_time.time() - start) * 1000
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    # Save result
+    import uuid
+    filename = f"fast_{uuid.uuid4().hex[:12]}.jpg"
+    filepath = settings.RESULTS_DIR / filename
+    cv2.imwrite(str(filepath), result)
+
+    return {
+        "result_url": f"/api/results/{filename}",
+        "processing_time_ms": round(elapsed_ms, 1),
+        "model_used": model_name,
+    }
 
 
 @router.get("/models")
 async def list_models():
-    """List available pre-trained models - to be implemented in M3."""
-    raise HTTPException(status_code=501, detail="모델 목록은 다음 마일스톤에서 구현됩니다.")
+    """List available pre-trained style transfer models."""
+    from services.fast_transfer import FastStyleTransfer
+
+    service = FastStyleTransfer(settings.MODELS_DIR)
+    return {"models": service.get_available_models()}
