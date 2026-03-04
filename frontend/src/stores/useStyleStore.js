@@ -30,7 +30,11 @@ const useStyleStore = create((set, get) => ({
 
   setStyleImage: (file) => {
     const preview = file ? URL.createObjectURL(file) : null;
-    set({ styleImage: file, stylePreview: preview, resultImage: null, error: null });
+    set({ styleImage: file, stylePreview: preview, stylePresetUrl: null, resultImage: null, error: null });
+  },
+
+  setStylePresetUrl: (url) => {
+    set({ styleImage: null, stylePreview: url, stylePresetUrl: url, resultImage: null, error: null });
   },
 
   setParams: (updates) =>
@@ -60,14 +64,26 @@ const useStyleStore = create((set, get) => ({
     })),
 
   startTransfer: async () => {
-    const { contentImage, styleImage, params } = get();
-    if (!contentImage || !styleImage) return;
+    const { contentImage, styleImage, stylePresetUrl, params } = get();
+    if (!contentImage || (!styleImage && !stylePresetUrl)) return;
 
     set({ isProcessing: true, error: null, previews: [], lossHistory: [], resultImage: null });
 
+    let styleFile = styleImage;
+    if (!styleFile && stylePresetUrl) {
+      try {
+        const resp = await fetch(stylePresetUrl);
+        const blob = await resp.blob();
+        styleFile = new File([blob], 'preset_style.jpg', { type: blob.type });
+      } catch {
+        set({ isProcessing: false, error: '프리셋 이미지를 불러오지 못했습니다.' });
+        return;
+      }
+    }
+
     const formData = new FormData();
     formData.append('content_image', contentImage);
-    formData.append('style_image', styleImage);
+    formData.append('style_image', styleFile);
     formData.append('content_weight', params.contentWeight);
     formData.append('style_weight', params.styleWeight);
     formData.append('num_steps', params.numSteps);

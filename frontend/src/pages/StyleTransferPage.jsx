@@ -4,6 +4,7 @@ import ImageUploader from '../components/style-transfer/ImageUploader';
 import ParameterPanel from '../components/style-transfer/ParameterPanel';
 import ProgressBar from '../components/style-transfer/ProgressBar';
 import ResultViewer from '../components/style-transfer/ResultViewer';
+import StylePresets from '../components/style-transfer/StylePresets';
 import { Play, Square } from 'lucide-react';
 
 export default function StyleTransferPage() {
@@ -11,6 +12,7 @@ export default function StyleTransferPage() {
   const stylePreview = useStyleStore((s) => s.stylePreview);
   const setContentImage = useStyleStore((s) => s.setContentImage);
   const setStyleImage = useStyleStore((s) => s.setStyleImage);
+  const setStylePresetUrl = useStyleStore((s) => s.setStylePresetUrl);
   const isProcessing = useStyleStore((s) => s.isProcessing);
   const taskId = useStyleStore((s) => s.taskId);
   const startTransfer = useStyleStore((s) => s.startTransfer);
@@ -39,12 +41,15 @@ export default function StyleTransferPage() {
           onSelect={setContentImage}
           onClear={() => setContentImage(null)}
         />
-        <ImageUploader
-          label="스타일 이미지"
-          preview={stylePreview}
-          onSelect={setStyleImage}
-          onClear={() => setStyleImage(null)}
-        />
+        <div className="space-y-2">
+          <ImageUploader
+            label="스타일 이미지"
+            preview={stylePreview}
+            onSelect={setStyleImage}
+            onClear={() => setStyleImage(null)}
+          />
+          <StylePresets onSelect={setStylePresetUrl} />
+        </div>
       </div>
 
       {/* Parameters */}

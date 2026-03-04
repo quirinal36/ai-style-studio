@@ -16,6 +16,7 @@ from services.image_processor import (
 )
 from services.gatys_transfer import GatysStyleTransfer, TransferParams, ProgressInfo
 from services.task_manager import task_manager, TaskStatus
+from api.gallery import add_gallery_item
 
 router = APIRouter()
 
@@ -63,6 +64,15 @@ async def gatys_transfer(
         task_id = await task_manager.create_task()
     except ValueError as e:
         raise HTTPException(status_code=429, detail=str(e))
+
+    # Save uploaded images for gallery reference
+    import uuid as _uuid
+    content_filename = f"content_{_uuid.uuid4().hex[:12]}.jpg"
+    style_filename = f"style_{_uuid.uuid4().hex[:12]}.jpg"
+    (settings.RESULTS_DIR / content_filename).write_bytes(content_bytes)
+    (settings.RESULTS_DIR / style_filename).write_bytes(style_bytes)
+    content_url = f"/api/results/{content_filename}"
+    style_url = f"/api/results/{style_filename}"
 
     # Load images
     content_img = load_image(content_bytes, max_size=max_size)
@@ -112,8 +122,29 @@ async def gatys_transfer(
             result_name = save_image(result_image, settings.RESULTS_DIR, prefix=f"{task_id}_")
             elapsed = time.time() - task_info.started_at
 
+            result_url_val = f"/api/results/{result_name}"
+
+            # Auto-save to gallery
+            try:
+                add_gallery_item(
+                    content_url=content_url,
+                    style_url=style_url,
+                    result_url=result_url_val,
+                    params={
+                        "content_weight": params.content_weight,
+                        "style_weight": params.style_weight,
+                        "num_steps": params.num_steps,
+                        "max_size": params.max_size,
+                        "learning_rate": params.learning_rate,
+                    },
+                    student_name=student_name,
+                    style_type="gatys",
+                )
+            except Exception:
+                pass  # Don't fail the transfer if gallery save fails
+
             await task_manager.complete_task(task_id, {
-                "result_url": f"/api/results/{result_name}",
+                "result_url": result_url_val,
                 "elapsed_seconds": round(elapsed, 1),
             })
 
@@ -228,8 +259,26 @@ async def fast_transfer(
     filepath = settings.RESULTS_DIR / filename
     cv2.imwrite(str(filepath), result)
 
+    # Save input image for gallery reference
+    input_filename = f"fast_input_{uuid.uuid4().hex[:12]}.jpg"
+    (settings.RESULTS_DIR / input_filename).write_bytes(image_bytes)
+
+    result_url_val = f"/api/results/{filename}"
+
+    # Auto-save to gallery
+    try:
+        add_gallery_item(
+            content_url=f"/api/results/{input_filename}",
+            style_url="",
+            result_url=result_url_val,
+            params={"model_name": model_name},
+            style_type="fast",
+        )
+    except Exception:
+        pass
+
     return {
-        "result_url": f"/api/results/{filename}",
+        "result_url": result_url_val,
         "processing_time_ms": round(elapsed_ms, 1),
         "model_used": model_name,
     }
