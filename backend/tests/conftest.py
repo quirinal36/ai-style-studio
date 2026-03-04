@@ -1,0 +1,22 @@
+import sys
+from pathlib import Path
+
+import pytest
+from httpx import ASGITransport, AsyncClient
+
+# Add backend to path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from main import app
+
+
+@pytest.fixture
+def anyio_backend():
+    return "asyncio"
+
+
+@pytest.fixture
+async def client():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as c:
+        yield c

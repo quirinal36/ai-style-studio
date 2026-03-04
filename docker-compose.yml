@@ -11,12 +11,11 @@ services:
     environment:
       - DEVICE=cpu
       - MAX_IMAGE_SIZE=400
-      - MODELS_DIR=/app/models
 
   frontend:
     build: ./frontend
     ports:
-      - "5173:5173"
+      - "80:80"
     depends_on:
       - backend
 
